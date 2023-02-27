@@ -19,28 +19,69 @@ def read_txt(path):
 
 
 def read_docx(path):
-    text = docx2python(path)
-    return text
+    text_docx = docx2python(path)
+    translator = Translator()
+    new_list = []
+    for i in text_docx.body_runs:
+        for j in i:
+            for k in j:
+                for l in k:
+                    for n in l:
+                        if n != [] and n.upper().isupper():
+                            if '<latex>' in n or '</latex>' in n:
+                                n = n.replace('<latex>', '').replace('</latex>', '')
+                            new_list.append(n)
+    new_list = sorted(list(set(new_list)), reverse=True, key=len)
+    for i in range(len(new_list)):
+        new_list[i] = new_list[i].replace('\n', '')
+    block_list = []
+    # разбиваем список на блоки меньше 4к символов
+    for i in range(len(new_list)):
+        temp = tokenize.sent_tokenize(new_list[i])
+        new_list.pop(i)
+        for j in temp:
+            new_list.append(j)
+    temp = ''
+    new_list = sorted(list(set(new_list)), reverse=True, key=len)
+    for i in new_list:
+        if len(temp + i + '\n') <= len_max:
+            temp += i + '\n'
+        else:
+            block_list.append(temp[:-1])
+            temp = i + '\n'
+    if temp != '':
+        block_list.append(temp[:-1])
+
+    # result = [translator.translate(i).text for i in new_list]
+    result = []
+    for i in block_list:
+        print(len(i))
+        result.append(translator.translate(i).text)
+
+    new_result = []
+    for i in result:
+        for j in i.split('\n'):
+            new_result.append(j)
+    document = docx.Document(path)
+    for i in range(len(new_result)):
+        for paragraph in document.paragraphs:
+            if new_list[i] in paragraph.text:
+                paragraph.text = paragraph.text.replace(new_list[i], new_result[i])
+        for table in document.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        if new_list[i] in paragraph.text:
+                            paragraph.text = paragraph.text.replace(new_list[i], new_result[i])
+    document.save('translated_' + path)
+    text_docx.close()
 
 
-translator = Translator()
 # text_txt = read_txt('test.txt')
 # result = translator.translate(text_txt)
 # print(result.text)
 
 
-text_docx = read_docx(file_name)
-new_list = []
-print(type(text_docx.text))
-for i in text_docx.body_runs:
-    for j in i:
-        for k in j:
-            for l in k:
-                for n in l:
-                    if n != [] and n.upper().isupper():
-                        if '<latex>' in n or '</latex>' in n:
-                            n = n.replace('<latex>', '').replace('</latex>', '')
-                        new_list.append(n)
 # print(new_list)
 # sent_docx = tokenize.sent_tokenize('\r'.join(new_list))
 # ent_docx = [i.split('\r') for i in sent_docx]
@@ -48,41 +89,13 @@ for i in text_docx.body_runs:
 # for i in sent_docx:
 #    for j in i:
 #        n_sent_docx.append(j)
-new_list = sorted(list(set(new_list)), reverse=True, key=len)
+
 # n_sent_docx = sorted(list(set(n_sent_docx)), reverse=True, key=len)
 # print(new_list)
 
-for i in range(len(new_list)):
-    new_list[i] = new_list[i].replace('\n', '')
 
-block_list = []
-# разбиваем список на блоки меньше 4к символов
-for i in range(len(new_list)):
-    temp = tokenize.sent_tokenize(new_list[i])
-    new_list.pop(i)
-    for j in temp:
-        new_list.append(j)
-temp = ''
-new_list = sorted(list(set(new_list)), reverse=True, key=len)
-for i in new_list:
-    if len(temp + i + '\n') <= len_max:
-        temp += i + '\n'
-    else:
-        block_list.append(temp[:-1])
-        temp = i + '\n'
-if temp != '':
-    block_list.append(temp[:-1])
 
-# result = [translator.translate(i).text for i in new_list]
-result = []
-for i in block_list:
-    print(len(i))
-    result.append(translator.translate(i).text)
 
-new_result = []
-for i in result:
-    for j in i.split('\n'):
-        new_result.append(j)
 
 
 def docx_find_replace_text(search_text, replace_text, paragraphs):
@@ -159,17 +172,7 @@ def docx_find_replace_text(search_text, replace_text, paragraphs):
                         inline[index].text = text
 
 
-document = docx.Document(file_name)
-for i in range(len(new_result)):
-    for paragraph in document.paragraphs:
-        if new_list[i] in paragraph.text:
-            paragraph.text = paragraph.text.replace(new_list[i], new_result[i])
-    for table in document.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                for paragraph in cell.paragraphs:
-                    if new_list[i] in paragraph.text:
-                        paragraph.text = paragraph.text.replace(new_list[i], new_result[i])
+
 
 # _paragraphs = list(document.paragraphs)
 # for t in document.tables:
@@ -178,11 +181,8 @@ for i in range(len(new_result)):
 #            for paragraph in cell.paragraphs:
 #                _paragraphs.append(paragraph)
 
-print(len(new_list))
-print(len(new_result))
 # for i in range(len(new_result)):
 #    print(f'{new_list[i]} -> {new_result[i]}')
 #    docx_find_replace_text(new_list[i], new_result[i], _paragraphs)
 
-document.save('translated_' + file_name)
-text_docx.close()
+

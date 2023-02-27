@@ -1,34 +1,34 @@
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from os import curdir, sep
+from flask import Flask, render_template
+from flask_wtf import FlaskForm
+from wtforms import FileField, SubmitField
+from werkzeug.utils import secure_filename
+import os
+from main import read_docx
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'supersecretkey'
+app.config['UPLOAD_FOLDER'] = 'upload_files'
 
 
-class requestHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        if self.path.endswith('/'):
-            self.path = '/index.html'
-            try:
-                f = open(self.path[1:], encoding="utf_8").read()
-                self.send_response(200)
-            except:
-                f = "File not found"
-                self.send_response(404)
-            self.end_headers()
-            self.wfile.write(bytes(f, 'utf8'))
-
-    def do_POST(self):
-        if self.path.endswith('/translate'):
-            self.send_response(301)
-            self.send_header('content-type', 'text/html')
-            self.send_header('Location', '/')
-            self.end_headers()
+class UploadFileForm(FlaskForm):
+    file = FileField('File')
+    submit = SubmitField("Upload File")
 
 
-def main():
-    PORT = 8000
-    server_address = ('', PORT)
-    httpd = HTTPServer(server_address, requestHandler)
-    httpd.serve_forever()
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/home', methods=['GET', 'POST'])
+def home():
+    form = UploadFileForm()
+    if form.validate_on_submit():
+        file = form.file.data
+        file.save(os.path.join(os.path.abspath(os.path.dirname(__file__)), app.config['UPLOAD_FOLDER'],
+                               secure_filename(file.filename)))
+        if file.filename.lower().endswith('.docx'):
+            read_docx('upload_files/' + file.filename)
+
+        return "Файл был загружен!"
+    return render_template('index.html', form=form)
 
 
 if __name__ == '__main__':
-    main()
+    app.run(debug=True)
