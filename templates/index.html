@@ -3,13 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <title>Document</title>
+    <script>
+        $(document).ready(function() {$("#lang_scr").select2();});
+    </script>
 </head>
 <body>
     <h1>Перевод текстовых файлов</h1>
     <form method="POST" enctype="multipart/form-data">
         {{form.hidden_tag()}}
         Выберите текстовый файл(.txt, .doc, .docx, .pdf, .xls, .xlsx){{form.file(accept=".txt, .doc, .docx, .pdf, .xls, .xlsx")}}<br/>
+        Перевести с
+        <input list="lang_scr" id='inp_src' name="inp_src">
+        <datalist id="lang_scr" name="lang_scr" >
+            <option value="Автоопределение" SELECTED>Автоопределение</option>
+            {% for lang in langs %}
+            <option value="{{lang}}">{{lang}}</option>
+            {% endfor %}
+        </datalist>
+        Перевести на        
+        <input list="lang_dest" id='inp_dest' name="inp_dest">
+        <datalist id="lang_dest" name="lang_dest" >                               
+            <option value="" SELECTED></option>
+            {% for lang in langs %}
+            <option value="{{lang}}">{{lang}}</option>
+            {% endfor %}            
+        </datalist>
+        
         {{form.submit()}}
     </form>
 </body>
+    <script type="text/javascript">            
+            let inval = document.getElementById('lang_scr');
+            let outval = document.getElementById('lang_dest');
+            var input_src = document.getElementById("inp_src");
+            var input_dest = document.getElementById("inp_dest");
+            input_src.addEventListener('change', function() {
+                let val = input_src.value;
+                for (var i=0; i<outval.options.length; i++)
+                {
+                    let el = outval.options[i]
+                    if (el.value == val)
+                        el.setAttribute("disabled", "")
+                    else
+                        el.removeAttribute("disabled")
+                }
+            });
+            input_dest.addEventListener('change', function() {
+                let val = input_dest.value
+                for (var i=0; i<inval.options.length; i++)
+                {
+                    let el = inval.options[i] 
+                    if (el.value == val)
+                        el.setAttribute("disabled", "")
+                    else
+                        el.removeAttribute("disabled")
+                }                
+            });
+    </script>
 </html>
