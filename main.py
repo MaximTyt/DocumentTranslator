@@ -1,15 +1,117 @@
-import cgi
 from googletrans import Translator
 from docx2python import docx2python
 from nltk import tokenize, download
-import docx
-
+from docx.api import Document
+import os
 len_max = 3000
-
-
-file_name = '23.11.22.DOCX'
 # download('punkt')
-
+LANGUAGES = {
+    'af': 'Африканский',
+    'sq': 'Албанский',
+    'am': 'Амхарский',
+    'ar': 'Арабский',
+    'hy': 'Армянский',
+    'az': 'Ажербайджанский',
+    'eu': 'Баскский',
+    'be': 'Белорусский',
+    'bn': 'Бенгальский',
+    'bs': 'Боснийский',
+    'bg': 'Болгарский',
+    'ca': 'Каталанский',
+    'ceb': 'Себуанский',
+    'ny': 'Чева',
+    'zh-cn': 'Китайский (упрощённый)',
+    'zh-tw': 'Китайский (традиционный)',
+    'co': 'Корсиканский',
+    'hr': 'Хорватский',
+    'cs': 'Чешский',
+    'da': 'Датский',
+    'nl': 'Нидерландский',
+    'en': 'Английский',
+    'eo': 'Эсперанто',
+    'et': 'Эстонсикй',
+    'tl': 'Филлипинский',
+    'fi': 'Финский',
+    'fr': 'Французский',
+    'fy': 'Фризский',
+    'gl': 'Галисийский',
+    'ka': 'Грузинский',
+    'de': 'Немецкий',
+    'el': 'Греческий',
+    'gu': 'Гуджарати',
+    'ht': 'Креольский (гаити)',
+    'ha': 'Хауса',
+    'haw': 'Гавайский',
+    'he': 'Иврит',
+    'hi': 'Хинди',
+    'hmn': 'Хмонг',
+    'hu': 'Венгерский',
+    'is': 'Исландский',
+    'ig': 'Игбо',
+    'id': 'Индонезисйский',
+    'ga': 'Ирландский',
+    'it': 'Итальянский',
+    'ja': 'Японский',
+    'jw': 'Яванский',
+    'kn': 'Каннада',
+    'kk': 'Казахский',
+    'km': 'Кхмерский',
+    'ko': 'Корейский',
+    'ku': 'Курдский (курманджи)',
+    'ky': 'Киргизский',
+    'lo': 'Лаосский',
+    'la': 'Латинский',
+    'lv': 'Латышский',
+    'lt': 'Литовский',
+    'lb': 'Люксембургский',
+    'mk': 'Македонский',
+    'mg': 'Малагасийский',
+    'ms': 'Малайский',
+    'ml': 'Малаялам',
+    'mt': 'Мальтийский',
+    'mi': 'Маори',
+    'mr': 'Маратхи',
+    'mn': 'Монгольский',
+    'my': 'Мейтейлон (Манипури)',
+    'ne': 'Непальский',
+    'no': 'Норвежский',
+    'or': 'Ория',
+    'ps': 'Пушту',
+    'fa': 'Персидский',
+    'pl': 'Польский',
+    'pt': 'Португальский',
+    'pa': 'Панджаби',
+    'ro': 'Румынский',
+    'ru': 'Русский',
+    'sm': 'Самоанский',
+    'gd': 'Шотландский (Гэльский)',
+    'sr': 'Сербский',
+    'st': 'Сесото',
+    'sn': 'Шона',
+    'sd': 'Синдхи',
+    'si': 'Сингальский',
+    'sk': 'Словацкий',
+    'sl': 'словенский',
+    'so': 'Сомалийский',
+    'es': 'Испанский',
+    'su': 'Сунданский',
+    'sw': 'Суахили',
+    'sv': 'Шведский',
+    'tg': 'Таджикский',
+    'ta': 'Тамильский',
+    'te': 'Телугу',
+    'th': 'Тайский',
+    'tr': 'Турецкий',
+    'uk': 'Украинский',
+    'ur': 'Урду',
+    'ug': 'Уйгурский',
+    'uz': 'Узбекский',
+    'vi': 'Вьетнамский',
+    'cy': 'Валлийский',
+    'xh': 'Коса',
+    'yi': 'Идиш',
+    'yo': 'Йоруба',
+    'zu': 'Зулу'}
 
 def read_txt(path):
     text = ''
@@ -17,33 +119,31 @@ def read_txt(path):
         text = f.read()
     return text
 
-
-def read_docx(path):
-    text_docx = docx2python(path)
-    translator = Translator()
-    new_list = []
-    for i in text_docx.body_runs:
-        for j in i:
-            for k in j:
-                for l in k:
-                    for n in l:
-                        if n != [] and n.upper().isupper():
-                            if '<latex>' in n or '</latex>' in n:
-                                n = n.replace('<latex>', '').replace('</latex>', '')
-                            new_list.append(n)
-    new_list = sorted(list(set(new_list)), reverse=True, key=len)
-    for i in range(len(new_list)):
-        new_list[i] = new_list[i].replace('\n', '')
+def read_docx(path, dest_lang, src_lang):
+    document = Document(path)
+    all_text = []
+    for p in document.paragraphs:
+        all_text.append(p.text)
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                all_text.append(cell.text)
+    new_all_text = []
+    for i in range(len(all_text)):
+        if '\n' in all_text[i] and len(all_text[i]) > 1:
+            temp = all_text[i].split('\n')
+            new_all_text.extend(temp)
+        elif len(all_text[i]) > len_max:
+            temp = tokenize.sent_tokenize(all_text[i])
+            new_all_text.extend(temp)
+        elif all_text[i] != '':
+            new_all_text.append(all_text[i])
+        if '' in new_all_text:
+            new_all_text.remove('')
+    all_text = sorted(list(set(new_all_text)), reverse=True, key=len)
     block_list = []
-    # разбиваем список на блоки меньше 4к символов
-    for i in range(len(new_list)):
-        temp = tokenize.sent_tokenize(new_list[i])
-        new_list.pop(i)
-        for j in temp:
-            new_list.append(j)
     temp = ''
-    new_list = sorted(list(set(new_list)), reverse=True, key=len)
-    for i in new_list:
+    for i in all_text:
         if len(temp + i + '\n') <= len_max:
             temp += i + '\n'
         else:
@@ -51,138 +151,58 @@ def read_docx(path):
             temp = i + '\n'
     if temp != '':
         block_list.append(temp[:-1])
-
-    # result = [translator.translate(i).text for i in new_list]
-    result = []
-    for i in block_list:
-        print(len(i))
-        result.append(translator.translate(i).text)
-
-    new_result = []
+    new_all_text = []
+    translator = Translator()
+    result = [translator.translate(i, dest=dest_lang, src=src_lang).text for i in block_list]
     for i in result:
-        for j in i.split('\n'):
-            new_result.append(j)
-    document = docx.Document(path)
-    for i in range(len(new_result)):
+        temp = i.split('\n')
+        new_all_text.extend(temp)
+
+
+    for i in range(len(new_all_text)):
         for paragraph in document.paragraphs:
-            if new_list[i] in paragraph.text:
-                paragraph.text = paragraph.text.replace(new_list[i], new_result[i])
+            if all_text[i] in paragraph.text:
+                paragraph.text = paragraph.text.replace(all_text[i], new_all_text[i])
         for table in document.tables:
             for row in table.rows:
                 for cell in row.cells:
                     for paragraph in cell.paragraphs:
-                        if new_list[i] in paragraph.text:
-                            paragraph.text = paragraph.text.replace(new_list[i], new_result[i])
+                        if all_text[i] in paragraph.text:
+                            paragraph.text = paragraph.text.replace(all_text[i], new_all_text[i])
     document.save('translated_' + path)
-    text_docx.close()
 
-
-# text_txt = read_txt('test.txt')
-# result = translator.translate(text_txt)
-# print(result.text)
-
-
-# print(new_list)
-# sent_docx = tokenize.sent_tokenize('\r'.join(new_list))
-# ent_docx = [i.split('\r') for i in sent_docx]
-# n_sent_docx = []
-# for i in sent_docx:
-#    for j in i:
-#        n_sent_docx.append(j)
-
-# n_sent_docx = sorted(list(set(n_sent_docx)), reverse=True, key=len)
-# print(new_list)
-
-
-
-
-
-
-def docx_find_replace_text(search_text, replace_text, paragraphs):
-    """Replace strings and retain the same style.
-    The text to be replaced can be split over several runs so
-    search through, identify which runs need to have text replaced
-    then replace the text in those identified
-    """
-    for p in paragraphs:
-        if search_text in p.text:
-            inline = p.runs
-            started = False
-            search_index = 0
-            # found_runs is a list of (inline index, index of match, length of match)
-            found_runs = list()
-            found_all = False
-            replace_done = False
-            for i in range(len(inline)):
-                # case 1: found in single run so short circuit the replace
-                if search_text in inline[i].text and not started:
-                    found_runs.append((i, inline[i].text.find(search_text), len(search_text)))
-                    text = inline[i].text.replace(search_text, str(replace_text))
-                    inline[i].text = text
-                    replace_done = True
-                    found_all = True
-                    break
-                if search_text[search_index] not in inline[i].text and not started:
-                    # keep looking ...
-                    continue
-                # case 2: search for partial text, find first run
-                if search_text[search_index] in inline[i].text and inline[i].text[-1] in search_text and not started:
-                    # check sequence
-                    start_index = inline[i].text.find(search_text[search_index])
-                    check_length = len(inline[i].text)
-                    for text_index in range(start_index, check_length):
-                        if inline[i].text[text_index] != search_text[search_index]:
-                            # no match so must be false positive
-                            break
-                    if search_index == 0:
-                        started = True
-                    chars_found = check_length - start_index
-                    search_index += chars_found
-                    found_runs.append((i, start_index, chars_found))
-                    if search_index != len(search_text):
-                        continue
-                    else:
-                        # found all chars in search_text
-                        found_all = True
-                        break
-                # case 2: search for partial text, find subsequent run
-                if search_text[search_index] in inline[i].text and started and not found_all:
-                    # check sequence
-                    chars_found = 0
-                    check_length = len(inline[i].text)
-                    for text_index in range(0, check_length):
-                        if inline[i].text[text_index] == search_text[search_index]:
-                            search_index += 1
-                            chars_found += 1
-                        else:
-                            break
-                    # no match so must be end
-                    found_runs.append((i, 0, chars_found))
-                    if search_index == len(search_text):
-                        found_all = True
-                        break
-            if found_all and not replace_done:
-                for i, item in enumerate(found_runs):
-                    index, start, length = [t for t in item]
-                    if i == 0:
-                        text = inline[index].text.replace(inline[index].text[start:start + length], str(replace_text))
-                        inline[index].text = text
-                    else:
-                        text = inline[index].text.replace(inline[index].text[start:start + length], '')
-                        inline[index].text = text
-
-
-
-
-# _paragraphs = list(document.paragraphs)
-# for t in document.tables:
-#    for row in t.rows:
-#        for cell in row.cells:
-#            for paragraph in cell.paragraphs:
-#                _paragraphs.append(paragraph)
-
-# for i in range(len(new_result)):
-#    print(f'{new_list[i]} -> {new_result[i]}')
-#    docx_find_replace_text(new_list[i], new_result[i], _paragraphs)
-
+# import os
+# import docx2txt
+# from win32com import client as wc
+#
+# def extract_text_from_docx(path):
+#     temp = docx2txt.process(path)
+#     text = [line.replace('\t', ' ') for line in temp.split('\n') if line]
+#     final_text = ' '.join(text)
+#     return final_text
+#
+# def extract_text_from_doc(doc_path):
+#     joinedPath = os.path.join(root_path, save_file_name)
+#     w = wc.Dispatch('Word.Application')
+#     doc = w.Documents.Open(file_path)
+#     doc.SaveAs(joinedPath, 16)
+#     doc.Close()
+#     w.Quit()
+#     joinedPath = os.path.join(root_path, save_file_name)
+#     text = extract_text_from_docx(joinedPath)
+#     return text
+#
+# def extract_text(file_path, extension):
+#     text = ''
+#     if extension == '.docx':
+#        text = extract_text_from_docx(file_path)
+#     elif extension == '.doc':
+#        text = extract_text_from_doc(file_path)
+#     return text
+#
+# file_path = "D:\Гипермедийные среды\Отчёт по ЛР_1 Гипермедийные среды Климаков М. А. ИДБ-19-03.doc"
+# root_path = "D:\Гипермедийные среды"
+# save_file_name = "Final2_text_docx.docx"
+# final_text = extract_text(file_path, '.doc')
+# print(final_text)
 
