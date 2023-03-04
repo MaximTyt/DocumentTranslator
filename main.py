@@ -3,6 +3,9 @@ from docx2python import docx2python
 from nltk import tokenize, download
 from docx.api import Document
 import os
+import docx2txt
+from win32com import client as wc
+import pythoncom
 len_max = 3000
 # download('punkt')
 LANGUAGES = {
@@ -11,7 +14,7 @@ LANGUAGES = {
     'am': 'Амхарский',
     'ar': 'Арабский',
     'hy': 'Армянский',
-    'az': 'Ажербайджанский',
+    'az': 'Азербайджанский',
     'eu': 'Баскский',
     'be': 'Белорусский',
     'bn': 'Бенгальский',
@@ -119,7 +122,23 @@ def read_txt(path):
         text = f.read()
     return text
 
-def read_docx(path, dest_lang, src_lang):
+
+def converter(file_path, src_ext, dest_ext):
+    file_path=os.path.abspath(file_path)
+    joinedPath = file_path.replace(src_ext, dest_ext)
+    pythoncom.CoInitialize()
+    w = wc.Dispatch('Word.Application')
+    doc = w.Documents.Open(file_path)
+    doc.SaveAs(joinedPath, 16)
+    doc.Close()
+    w.Quit()
+    return joinedPath
+
+
+def read_doc_and_docx(path, dest_lang, src_lang):
+    origin_path = path
+    if path.endswith('.doc'):
+        path = converter(path, '.doc', '.docx')
     document = Document(path)
     all_text = []
     for p in document.paragraphs:
@@ -169,40 +188,8 @@ def read_docx(path, dest_lang, src_lang):
                     for paragraph in cell.paragraphs:
                         if all_text[i] in paragraph.text:
                             paragraph.text = paragraph.text.replace(all_text[i], new_all_text[i])
-    document.save('translated_' + path)
+    if origin_path.lower().endswith('.doc'):
+        path = converter(path, '.docx', '.doc')
+    document.save(path.replace('upload_files', 'translated_upload_files'))
 
-# import os
-# import docx2txt
-# from win32com import client as wc
-#
-# def extract_text_from_docx(path):
-#     temp = docx2txt.process(path)
-#     text = [line.replace('\t', ' ') for line in temp.split('\n') if line]
-#     final_text = ' '.join(text)
-#     return final_text
-#
-# def extract_text_from_doc(doc_path):
-#     joinedPath = os.path.join(root_path, save_file_name)
-#     w = wc.Dispatch('Word.Application')
-#     doc = w.Documents.Open(file_path)
-#     doc.SaveAs(joinedPath, 16)
-#     doc.Close()
-#     w.Quit()
-#     joinedPath = os.path.join(root_path, save_file_name)
-#     text = extract_text_from_docx(joinedPath)
-#     return text
-#
-# def extract_text(file_path, extension):
-#     text = ''
-#     if extension == '.docx':
-#        text = extract_text_from_docx(file_path)
-#     elif extension == '.doc':
-#        text = extract_text_from_doc(file_path)
-#     return text
-#
-# file_path = "D:\Гипермедийные среды\Отчёт по ЛР_1 Гипермедийные среды Климаков М. А. ИДБ-19-03.doc"
-# root_path = "D:\Гипермедийные среды"
-# save_file_name = "Final2_text_docx.docx"
-# final_text = extract_text(file_path, '.doc')
-# print(final_text)
 
