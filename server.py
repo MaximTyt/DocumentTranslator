@@ -3,7 +3,7 @@ from flask_wtf import FlaskForm
 from wtforms import FileField, SubmitField
 from werkzeug.utils import secure_filename
 import os
-from main import read_docx, LANGUAGES
+from main import read_doc_and_docx, LANGUAGES
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'supersecretkey'
@@ -33,8 +33,8 @@ def home():
         if file:
             file.save(os.path.join(os.path.abspath(os.path.dirname(__file__)), app.config['UPLOAD_FOLDER'],
                                    file.filename))
-            if file.filename.lower().endswith('.docx'):
-                read_docx('upload_files/' + file.filename, dest_lang, src_lang)
+            if file.filename.lower().endswith('.docx') or file.filename.lower().endswith('.doc'):
+                read_doc_and_docx('upload_files/' + file.filename, dest_lang, src_lang)
 
             return "Файл был переведён успешно!"
     return render_template('index.html', form=form, langs=list(LANGUAGES.values()))
