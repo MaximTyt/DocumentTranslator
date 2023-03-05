@@ -1,11 +1,13 @@
+import shutil
 from googletrans import Translator
-from docx2python import docx2python
 from nltk import tokenize, download
 from docx.api import Document
 import os
 import docx2txt
 from win32com import client as wc
 import pythoncom
+from pdf2docx import Converter
+from docx2pdf import convert
 len_max = 3000
 # download('punkt')
 LANGUAGES = {
@@ -123,8 +125,8 @@ def read_txt(path):
     return text
 
 
-def converter(file_path, src_ext, dest_ext):
-    file_path=os.path.abspath(file_path)
+def convertDocAndDocx(file_path, src_ext, dest_ext):
+    file_path = os.path.abspath(file_path)
     joinedPath = file_path.replace(src_ext, dest_ext)
     pythoncom.CoInitialize()
     w = wc.Dispatch('Word.Application')
@@ -134,11 +136,24 @@ def converter(file_path, src_ext, dest_ext):
     w.Quit()
     return joinedPath
 
+def convertPDFtoDocx(path):
+    try:
+        cv_obj = Converter(path)
+        path = path.replace('.pdf', '.docx')
+        cv_obj.convert(path)
+        cv_obj.close()
+    except:
+        print('Conversion Failed')
+    else:
+        return path
 
-def read_doc_and_docx(path, dest_lang, src_lang):
+
+def read_doc_docx_pdf(path, dest_lang, src_lang):
     origin_path = path
     if path.endswith('.doc'):
-        path = converter(path, '.doc', '.docx')
+        path = convertDocAndDocx(path, '.doc', '.docx')
+    elif path.endswith('pdf'):
+        path = convertPDFtoDocx(path)
     document = Document(path)
     all_text = []
     for p in document.paragraphs:
@@ -177,8 +192,8 @@ def read_doc_and_docx(path, dest_lang, src_lang):
         temp = i.split('\n')
         new_all_text.extend(temp)
 
-
-    for i in range(len(new_all_text)):
+    text_len = min(len(all_text), len(new_all_text))
+    for i in range(text_len):
         for paragraph in document.paragraphs:
             if all_text[i] in paragraph.text:
                 paragraph.text = paragraph.text.replace(all_text[i], new_all_text[i])
@@ -189,7 +204,11 @@ def read_doc_and_docx(path, dest_lang, src_lang):
                         if all_text[i] in paragraph.text:
                             paragraph.text = paragraph.text.replace(all_text[i], new_all_text[i])
     if origin_path.lower().endswith('.doc'):
-        path = converter(path, '.docx', '.doc')
-    document.save(path.replace('upload_files', 'translated_upload_files'))
-
-
+        path = convertDocAndDocx(path, '.docx', '.doc')
+    path = path.replace('upload_files', 'translated_upload_files').replace('.DOCX', '.docx')
+    document.save(path)
+    if origin_path.lower().endswith('.pdf'):
+        pythoncom.CoInitialize()
+        convert(os.path.abspath(path), os.path.abspath(path.replace('.docx', '.pdf')))
+        os.remove(path)
+    shutil.rmtree('upload_files')
