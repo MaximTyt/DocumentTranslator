@@ -118,11 +118,7 @@ LANGUAGES = {
     'yo': 'Йоруба',
     'zu': 'Зулу'}
 
-def read_txt(path):
-    text = ''
-    with open(path, encoding="utf_8") as f:
-        text = f.read()
-    return text
+
 
 
 def convertDocAndDocx(file_path, src_ext, dest_ext):
@@ -148,20 +144,7 @@ def convertPDFtoDocx(path):
         return path
 
 
-def read_doc_docx_pdf(path, dest_lang, src_lang):
-    origin_path = path
-    if path.endswith('.doc'):
-        path = convertDocAndDocx(path, '.doc', '.docx')
-    elif path.endswith('pdf'):
-        path = convertPDFtoDocx(path)
-    document = Document(path)
-    all_text = []
-    for p in document.paragraphs:
-        all_text.append(p.text)
-    for table in document.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                all_text.append(cell.text)
+def translateText(all_text, dest_lang, src_lang):
     new_all_text = []
     for i in range(len(all_text)):
         if '\n' in all_text[i] and len(all_text[i]) > 1:
@@ -175,6 +158,8 @@ def read_doc_docx_pdf(path, dest_lang, src_lang):
         if '' in new_all_text:
             new_all_text.remove('')
     all_text = sorted(list(set(new_all_text)), reverse=True, key=len)
+    if '' in all_text:
+        all_text.remove('')
     block_list = []
     temp = ''
     for i in all_text:
@@ -191,6 +176,41 @@ def read_doc_docx_pdf(path, dest_lang, src_lang):
     for i in result:
         temp = i.split('\n')
         new_all_text.extend(temp)
+    return all_text, new_all_text
+
+
+def translate_txt(path, dest_lang, src_lang):
+    text = ''
+    with open(path, encoding="utf_8") as f:
+        text = f.read()
+    all_text = text.split('\n')
+    all_text, new_all_text = translateText(all_text, dest_lang, src_lang)
+    text_len = min(len(all_text), len(new_all_text))
+    for i in range(text_len):
+        text = text.replace(all_text[i], new_all_text[i])
+    path = path.replace('upload_files', 'translated_upload_files')
+    with open(path, 'w', encoding="utf-8") as f:
+        f.write(text)
+    f.close()
+    shutil.rmtree('upload_files')
+
+
+def translate_doc_docx_pdf(path, dest_lang, src_lang):
+    origin_path = path
+    if path.endswith('.doc'):
+        path = convertDocAndDocx(path, '.doc', '.docx')
+    elif path.endswith('pdf'):
+        path = convertPDFtoDocx(path)
+    document = Document(path)
+    all_text = []
+    for p in document.paragraphs:
+        all_text.append(p.text)
+    for table in document.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                all_text.append(cell.text)
+
+    all_text, new_all_text = translateText(all_text, dest_lang, src_lang)
 
     text_len = min(len(all_text), len(new_all_text))
     for i in range(text_len):
@@ -210,5 +230,5 @@ def read_doc_docx_pdf(path, dest_lang, src_lang):
     if origin_path.lower().endswith('.pdf'):
         pythoncom.CoInitialize()
         convert(os.path.abspath(path), os.path.abspath(path.replace('.docx', '.pdf')))
-        os.remove(path)
     shutil.rmtree('upload_files')
+
