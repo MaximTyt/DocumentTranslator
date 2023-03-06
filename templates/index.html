@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <title>Document</title>
-    <script>
-        $(document).ready(function() {$("#lang_scr").select2();});
-    </script>
+    <link rel="stylesheet" href="../static/styles/styles.css" />
 </head>
 <body>
     <h1>Перевод текстовых файлов</h1>
     <form method="POST" enctype="multipart/form-data">
         {{form.hidden_tag()}}
-        Выберите текстовый файл(.txt, .doc, .docx, .pdf, .xls, .xlsx){{form.file(accept=".txt, .doc, .docx, .pdf, .xls, .xlsx")}}<br/>
+        {% if not file %}
+        Выберите документ<br/>
+        Загрузите текстовый файл(.txt, .doc, .docx, .pdf, .xls, .xlsx)<br/>        
+        <label for='cf' class="btn">Загрузить с компьютера</label>
+        {{form.file(accept=".txt, .doc, .docx, .pdf, .xls, .xlsx", id='cf', class='file')}}<br/> 
         Перевести с
         <input list="lang_scr" id='inp_src' name="inp_src">
         <datalist id="lang_scr" name="lang_scr" >
@@ -27,11 +29,19 @@
             {% for lang in langs %}
             <option value="{{lang}}">{{lang}}</option>
             {% endfor %}            
-        </datalist>
-        
+        </datalist>                
         {{form.submit()}}
+        {% endif %}
+        <div >
+        {% if file%}        
+            <label>Хотите скачать переведённый файл?</label>
+            {{form.download()}}<br/>
+            <label>Хотите перевести документы ещё раз?</label>
+            {{form.back()}}
+        {% endif %}
+        </div>
     </form>
-</body>
+</body>    
     <script type="text/javascript">            
             let inval = document.getElementById('lang_scr');
             let outval = document.getElementById('lang_dest');
