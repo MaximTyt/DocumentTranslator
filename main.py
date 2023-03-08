@@ -3,11 +3,10 @@ from googletrans import Translator
 from nltk import tokenize, download
 from docx.api import Document
 import os
-import docx2txt
 from win32com import client as wc
 import pythoncom
 from pdf2docx import Converter
-from docx2pdf import convert
+import openpyxl
 len_max = 3000
 # download('punkt')
 LANGUAGES = {
@@ -118,18 +117,33 @@ LANGUAGES = {
     'yo': 'Йоруба',
     'zu': 'Зулу'}
 
-
-
-
-def convertDocAndDocx(file_path, src_ext, dest_ext):
+# FileFormat = 11 .doc, 12 .docx, 17 .pdf, 51 .xlsx, 56 .xls
+def convertXlsAndXlsx(file_path, src_ext, dest_ext, file_format):
     file_path = os.path.abspath(file_path)
     joinedPath = file_path.replace(src_ext, dest_ext)
     pythoncom.CoInitialize()
-    w = wc.Dispatch('Word.Application')
-    doc = w.Documents.Open(file_path)
-    doc.SaveAs(joinedPath, 16)
+    excel = wc.gencache.EnsureDispatch('Excel.Application')
+    wb = excel.Workbooks.Open(file_path)
+    wb.SaveAs(joinedPath, FileFormat=file_format)
+    wb.Close()
+    excel.Application.Quit()
+    print(f'Конвертация {file_path} -> {joinedPath} прошла успешно!')
+    return joinedPath
+
+
+def convertDocAndDocx(file_path, src_ext, dest_ext, file_format, type_app):
+    file_path = os.path.abspath(file_path)
+    joinedPath = file_path.replace(src_ext, dest_ext)
+    pythoncom.CoInitialize()
+    w = wc.Dispatch(type_app)
+    if file_format in (51, 56):
+        doc = w.Workbooks.Open(file_path)
+    else:
+        doc = w.Documents.Open(file_path)
+    doc.SaveAs(joinedPath, FileFormat=file_format)
     doc.Close()
     w.Quit()
+    print(f'Конвертация {file_path} -> {joinedPath} прошла успешно!')
     return joinedPath
 
 def convertPDFtoDocx(path):
@@ -198,7 +212,7 @@ def translate_txt(path, dest_lang, src_lang):
 def translate_doc_docx_pdf(path, dest_lang, src_lang):
     origin_path = path
     if path.endswith('.doc'):
-        path = convertDocAndDocx(path, '.doc', '.docx')
+        path = convertDocAndDocx(path, '.doc', '.docx', 12, 'Word.Application')
     elif path.endswith('pdf'):
         path = convertPDFtoDocx(path)
     document = Document(path)
@@ -223,12 +237,34 @@ def translate_doc_docx_pdf(path, dest_lang, src_lang):
                     for paragraph in cell.paragraphs:
                         if all_text[i] in paragraph.text:
                             paragraph.text = paragraph.text.replace(all_text[i], new_all_text[i])
-    if origin_path.lower().endswith('.doc'):
-        path = convertDocAndDocx(path, '.docx', '.doc')
     path = path.replace('upload_files', 'translated_upload_files').replace('.DOCX', '.docx')
     document.save(path)
+    if origin_path.lower().endswith('.doc'):
+        convertDocAndDocx(path, '.docx', '.doc', 11, 'Word.Application')
     if origin_path.lower().endswith('.pdf'):
-        pythoncom.CoInitialize()
-        convert(os.path.abspath(path), os.path.abspath(path.replace('.docx', '.pdf')))
-    shutil.rmtree('upload_files')
+        convertDocAndDocx(path, '.docx', '.pdf', 17, 'Word.Application')
 
+def translate_xls_xlsx(path, dest_lang, src_lang):
+    origin_path = path
+    all_text = []
+    if path.endswith('.xls'):
+        path = convertXlsAndXlsx(path, '.xls', '.xlsx', 51)
+    wb = openpyxl.load_workbook(path)
+    for ws in wb.worksheets:
+        for row in ws.iter_rows():
+            for cell in row:
+                if cell.value is not None:
+                    all_text.append(cell.value)
+    all_text, new_all_text = translateText(all_text, dest_lang, src_lang)
+    text_len = min(len(all_text), len(new_all_text))
+    for i in range(text_len):
+        for ws in wb.worksheets:
+            for row in ws.iter_rows():
+                for cell in row:
+                    if cell.value is not None:
+                        if all_text[i] in cell.value:
+                            cell.value = cell.value.replace(all_text[i], new_all_text[i])
+    path = path.replace('upload_files', 'translated_upload_files')
+    wb.save(path)
+    if origin_path.endswith('.xls'):
+        convertXlsAndXlsx(path, '.xlsx', '.xls', 56)

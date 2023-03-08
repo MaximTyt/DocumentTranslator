@@ -2,72 +2,58 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Document</title>
+    <title>DocumentTranslator</title>
     <link rel="stylesheet" href="../static/styles/styles.css" />
 </head>
-<body>
-    <h1>Перевод текстовых файлов</h1>
-    <form method="POST" enctype="multipart/form-data">
-        {{form.hidden_tag()}}
-        {% if not file %}
-        Выберите документ<br/>
-        Загрузите текстовый файл(.txt, .doc, .docx, .pdf, .xls, .xlsx)<br/>        
-        <label for='cf' class="btn">Загрузить с компьютера</label>
-        {{form.file(accept=".txt, .doc, .docx, .pdf, .xls, .xlsx", id='cf', class='file')}}<br/> 
-        Перевести с
-        <input list="lang_scr" id='inp_src' name="inp_src">
-        <datalist id="lang_scr" name="lang_scr" >
-            <option value="Автоопределение" SELECTED>Автоопределение</option>
-            {% for lang in langs %}
-            <option value="{{lang}}">{{lang}}</option>
-            {% endfor %}
-        </datalist>
-        Перевести на        
-        <input list="lang_dest" id='inp_dest' name="inp_dest">
-        <datalist id="lang_dest" name="lang_dest" >                               
-            <option value="" SELECTED></option>
-            {% for lang in langs %}
-            <option value="{{lang}}">{{lang}}</option>
-            {% endfor %}            
-        </datalist>                
-        {{form.submit()}}
-        {% endif %}
-        <div >
-        {% if file%}        
-            <label>Хотите скачать переведённый файл?</label>
-            {{form.download()}}<br/>
-            <label>Хотите перевести документы ещё раз?</label>
-            {{form.back()}}
-        {% endif %}
-        </div>
-    </form>
+<body class='bodybg'>
+   <div class="wrapper" style="text-align: center;">        
+        <h1 class="aliceblue">Перевод текстовых файлов</h1>
+        <form method="POST" enctype="multipart/form-data">
+            {{form.hidden_tag()}}
+            {% if not file %}
+            <div>
+            <b class="aliceblue">Выберите документ</b><br/>
+            <b class="aliceblue">Загрузите текстовый файл(.txt, .doc, .docx, .pdf, .xls, .xlsx)</b><br/>
+            <br/> 
+            </div>
+            <div id='uploadFile' style="position: relative; right: -130px;">       
+                <label for='inputFile' class="btn">Загрузить с компьютера</label>
+                {{form.file(accept=".txt, .doc, .docx, .pdf, .xls, .xlsx", id='inputFile', class='file')}} 
+            </div>
+            <div hidden id='aboutFile'>
+                <br/>
+                <b id="fileName" class="aliceblue"></b><br/>
+                <b id="fileSize" class="aliceblue"></b><br/>
+            </div>
+            <br/>                
+            <b class="aliceblue">Перевести с</b>
+            <input list="lang_scr" id='inp_src' name="inp_src">
+            <datalist id="lang_scr" name="lang_scr" >
+                <option value="Автоопределение" SELECTED>Автоопределение</option>
+                {% for lang in langs %}
+                <option value="{{lang}}">{{lang}}</option>
+                {% endfor %}
+            </datalist>
+            <b class="aliceblue">Перевести на</b>        
+            <input list="lang_dest" id='inp_dest' name="inp_dest">
+            <datalist id="lang_dest" name="lang_dest" >                               
+                <option value="" SELECTED></option>
+                {% for lang in langs %}
+                <option value="{{lang}}">{{lang}}</option>
+                {% endfor %}            
+            </datalist>                
+            {{form.submit()}}
+            {% endif %}
+            <div >
+            {% if file%}        
+                <label class="aliceblue">Хотите скачать переведённый файл?</label>
+                {{form.download()}}<br/>
+                <label class="aliceblue">Хотите перевести документы ещё раз?</label>
+                {{form.back()}}
+            {% endif %}
+            </div>
+        </form>            
+    </div>    
 </body>    
-    <script type="text/javascript">            
-            let inval = document.getElementById('lang_scr');
-            let outval = document.getElementById('lang_dest');
-            var input_src = document.getElementById("inp_src");
-            var input_dest = document.getElementById("inp_dest");
-            input_src.addEventListener('change', function() {
-                let val = input_src.value;
-                for (var i=0; i<outval.options.length; i++)
-                {
-                    let el = outval.options[i]
-                    if (el.value == val)
-                        el.setAttribute("disabled", "")
-                    else
-                        el.removeAttribute("disabled")
-                }
-            });
-            input_dest.addEventListener('change', function() {
-                let val = input_dest.value
-                for (var i=0; i<inval.options.length; i++)
-                {
-                    let el = inval.options[i] 
-                    if (el.value == val)
-                        el.setAttribute("disabled", "")
-                    else
-                        el.removeAttribute("disabled")
-                }                
-            });
-    </script>
+    <script src='../static/js/script.js'></script>
 </html>
