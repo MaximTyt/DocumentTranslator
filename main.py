@@ -1,5 +1,4 @@
 import shutil
-from googletrans import Translator
 from nltk import tokenize, download
 from docx.api import Document
 import os
@@ -7,6 +6,8 @@ from win32com import client as wc
 import pythoncom
 from pdf2docx import Converter
 import openpyxl
+import requests
+import subprocess
 len_max = 3000
 # download('punkt')
 LANGUAGES = {
@@ -117,6 +118,43 @@ LANGUAGES = {
     'yo': 'Йоруба',
     'zu': 'Зулу'}
 
+
+def yandexTranslate(texts, src_lang, tar_lang):
+    p = subprocess.Popen(["powershell.exe",
+                          "static\powershell\iam_token.ps1"],
+                         stdout=subprocess.PIPE)
+    p_out, p_err = p.communicate()
+    iam_token = p_out.decode()[:-2]
+    folder_id = 'b1g8gpn40u2m0glvtp08'
+
+    if (src_lang == 'auto'):
+        body = {
+            "targetLanguageCode": tar_lang,
+            "texts": texts,
+            "folderId": folder_id,
+        }
+    else:
+        body = {
+            "sourceLanguageCode": src_lang,
+            "targetLanguageCode": tar_lang,
+            "texts": texts,
+            "folderId": folder_id,
+        }
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer {0}".format(iam_token)
+    }
+
+    response = requests.post('https://translate.api.cloud.yandex.net/translate/v2/translate',
+                             json=body,
+                             headers=headers
+                             )
+
+    return [t["text"] for t in response.json()["translations"]]
+
+
+
 # FileFormat = 11 .doc, 12 .docx, 17 .pdf, 51 .xlsx, 56 .xls
 def convertXlsAndXlsx(file_path, src_ext, dest_ext, file_format):
     file_path = os.path.abspath(file_path)
@@ -185,8 +223,7 @@ def translateText(all_text, dest_lang, src_lang):
     if temp != '':
         block_list.append(temp[:-1])
     new_all_text = []
-    translator = Translator()
-    result = [translator.translate(i, dest=dest_lang, src=src_lang).text for i in block_list]
+    result = [yandexTranslate(texts=i, src_lang=src_lang, tar_lang=dest_lang)[0] for i in block_list]
     for i in result:
         temp = i.split('\n')
         new_all_text.extend(temp)
@@ -268,3 +305,5 @@ def translate_xls_xlsx(path, dest_lang, src_lang):
     wb.save(path)
     if origin_path.endswith('.xls'):
         convertXlsAndXlsx(path, '.xlsx', '.xls', 56)
+
+
