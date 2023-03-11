@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>DocumentTranslator</title>
-    <link rel="stylesheet" href="../static/styles/styles.css" />
+    <link rel="stylesheet" href="../static/styles/styles.css" />    
 </head>
 <body class='bodybg'>
-   <div class="wrapper" style="text-align: center;">        
+  <div id="loading" >
+      <h1>Идёт перевод текста...</h1>
+  </div>
+   <div id="content" class="wrapper" style="text-align: center;">        
         <h1 class="aliceblue">Перевод текстовых файлов</h1>
         <form method="POST" enctype="multipart/form-data">
             {{form.hidden_tag()}}
@@ -42,7 +45,7 @@
                 <option value="{{lang}}">{{lang}}</option>
                 {% endfor %}            
             </datalist>                
-            {{form.submit()}}
+            {{form.submit(onclick="preload();", id='translate', class='file')}}
             {% endif %}
             <div >
             {% if file%}        
@@ -54,6 +57,6 @@
             </div>
         </form>            
     </div>    
-</body>    
-    <script src='../static/js/script.js'></script>
+</body>
+<script src='../static/js/script.js'></script>
 </html>

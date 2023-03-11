@@ -15,22 +15,6 @@
     background: rgb(247,151,30);
     color: rgb(8,8,8);
 }
-.CQQi5b {
-    background: rgb(26,115,232);
-    border-radius: 4px;
-    box-sizing: border-box;
-    color: #fff;
-    cursor: pointer;
-    display: inline-block;
-    font-family: "Google Sans",sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    letter-spacing: .3px;
-    line-height: 16px;
-    height: 36px;
-    margin: 24px 16px 0;
-    padding: 10px 12px;
-}   
 .file {
     visibility: hidden
 }
@@ -59,4 +43,26 @@ body {
 .aliceblue{
     /*color: rgb(247,151,30);*/
     color: aliceblue;
+}
+div#loading {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: 50%;
+        background-size: auto;
+        z-index: -1;        
+}
+div#loading h1 {
+            font-size: 100px;
+            font-weight: 100;
+            margin-bottom: 16px;
+            color: aliceblue;
+            text-align: center;
+            position: absolute;
+            width: 100%;
+            top: 40%;
+            transform: translateY(-50%);
 }
